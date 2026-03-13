@@ -45,6 +45,8 @@ mod tests {
             api_key: "test_execution_key".to_string(),
             prompt: "Test prompt".to_string(),
             timeout_secs: 10,
+            vendor: "openai".to_string(),
+            model: None,
             base_url: Some(mock_server.url().to_string()),
         };
 
@@ -78,6 +80,8 @@ mod tests {
             api_key: "invalid_key".to_string(),
             prompt: "Test prompt".to_string(),
             timeout_secs: 10,
+            vendor: "openai".to_string(),
+            model: None,
             base_url: Some(mock_server.url().to_string()),
         };
 

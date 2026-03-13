@@ -7,7 +7,7 @@ use std::process::ExitCode;
 
 use agent::AgentResponse;
 use clap::Parser;
-use config::{get_prompt, load_api_key, AppConfig, Cli};
+use config::{get_prompt, load_api_key, load_toml_config, merge_config, AppConfig, Cli};
 use execution::execute;
 
 fn write_success<W: Write>(response: &AgentResponse, writer: &mut W) -> io::Result<()> {
@@ -21,6 +21,10 @@ fn write_error<W: Write>(error: &str, writer: &mut W) -> io::Result<()> {
 fn run() -> Result<AgentResponse, String> {
     let cli = Cli::parse();
 
+    let toml_config = load_toml_config(cli.config.as_ref()).map_err(|e| e.message)?;
+
+    let (timeout_secs, vendor, model, base_url) = merge_config(&cli, &toml_config);
+
     let api_key = load_api_key().map_err(|e| e.message)?;
 
     let stdin = io::stdin();
@@ -29,8 +33,10 @@ fn run() -> Result<AgentResponse, String> {
     let config = AppConfig {
         api_key,
         prompt,
-        timeout_secs: cli.timeout,
-        base_url: None,
+        timeout_secs,
+        vendor,
+        model,
+        base_url,
     };
 
     execute(config).map_err(|e| e.message)

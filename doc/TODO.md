@@ -327,10 +327,12 @@ fn main() -> ExitCode {
 Support for configuration via TOML file with vendor-specific settings.
 
 ### 7.1 Add Dependencies
-- [ ] Add `toml` crate for TOML parsing
-- [ ] Add `dirs` crate for cross-platform home directory
+- [x] Add `toml` crate for TOML parsing
+- [x] Add `dirs` crate for cross-platform home directory
 
 ### 7.2 Define Configuration Structs
+- [x] Implement structs in `src/config.rs`
+
 ```rust
 #[derive(Deserialize, Default)]
 struct TomlConfig {
@@ -355,56 +357,56 @@ struct VendorConfig {
 ### 7.3 TDD: Config File Loading
 
 #### Test: Load config from specified path
-- [ ] **Write test:** `test_load_config_from_path`
+- [x] **Write test:** `test_load_config_from_path`
   - Given: `--config /path/to/config.toml`
   - Expected: Config loaded from specified path
 
 #### Test: Load config from home directory
-- [ ] **Write test:** `test_load_config_from_home`
+- [x] **Write test:** `test_load_config_from_home` (functionality in `get_default_config_path()`)
   - Given: No `--config` arg, `~/.agent-run.toml` exists
   - Expected: Config loaded from home directory
 
 #### Test: Default config when file missing
-- [ ] **Write test:** `test_default_config_when_missing`
+- [x] **Write test:** `test_default_config_when_missing`
   - Given: No config file exists
   - Expected: Built-in defaults used
 
 #### Test: Parse general section
-- [ ] **Write test:** `test_parse_general_section`
+- [x] **Write test:** `test_parse_general_section`
   - Given: TOML with `[general]` section
   - Expected: timeout and default_vendor parsed
 
 #### Test: Parse vendor sections
-- [ ] **Write test:** `test_parse_vendor_sections`
+- [x] **Write test:** `test_parse_vendor_sections`
   - Given: TOML with `[openai]` and `[gemini]` sections
   - Expected: base_url and model parsed for each vendor
 
 ### 7.4 TDD: CLI Config Flag
 
 #### Test: --config flag
-- [ ] **Write test:** `test_config_cli_flag`
+- [x] **Write test:** `test_config_cli_flag`
   - Given: CLI args with `--config path/to/file.toml`
   - Expected: Config path stored in CLI struct
 
 #### Test: --vendor flag
-- [ ] **Write test:** `test_vendor_cli_flag`
+- [x] **Write test:** `test_vendor_cli_flag`
   - Given: CLI args with `--vendor gemini`
   - Expected: Vendor selection stored in CLI struct
 
 #### Test: --model flag
-- [ ] **Write test:** `test_model_cli_flag`
+- [x] **Write test:** `test_model_cli_flag`
   - Given: CLI args with `--model gpt-4`
   - Expected: Model override stored in CLI struct
 
 ### 7.5 TDD: Configuration Merging
 
 #### Test: CLI overrides config file
-- [ ] **Write test:** `test_cli_overrides_config`
+- [x] **Write test:** `test_cli_overrides_config`
   - Given: Config file has timeout=30, CLI has --timeout 60
   - Expected: Final timeout is 60
 
 #### Test: Config file overrides defaults
-- [ ] **Write test:** `test_config_overrides_defaults`
+- [x] **Write test:** `test_config_overrides_defaults`
   - Given: Config file has timeout=30, no CLI override
   - Expected: Final timeout is 30
 

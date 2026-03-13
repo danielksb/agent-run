@@ -276,19 +276,28 @@ pub fn execute(config: AppConfig) -> Result<AgentResponse, AgentError>;
 - [x] **Verify test passes**
 - [x] **Implement:** `write_error(error, writer)` with format `agent-run: error: <message>`
 
-### 5.2 Implement main()
-- [ ] Wire together all components:
-```
-1. Build AppConfig from CLI args and env
-2. Call execute(config)
-3. Match result:
-   - Ok(response) -> print to stdout, exit 0
-   - Err(error) -> print to stderr, exit 1
+### 5.2 Implement main() ✓
+- [x] Wire together all components:
+```rust
+fn run() -> Result<AgentResponse, String> {
+    let cli = Cli::parse();
+    let api_key = load_api_key()?;
+    let prompt = get_prompt(cli.prompt, stdin.lock())?;
+    let config = AppConfig { api_key, prompt, timeout_secs, base_url: None };
+    execute(config)
+}
+
+fn main() -> ExitCode {
+    match run() {
+        Ok(response) -> write to stdout, return SUCCESS
+        Err(error) -> write to stderr, return FAILURE
+    }
+}
 ```
 
-### 5.3 Error Message Format
-- [ ] Use format: `agent-run: error: <description>`
-- [ ] Include relevant details (HTTP status code, API error message)
+### 5.3 Error Message Format ✓
+- [x] Use format: `agent-run: error: <description>`
+- [x] Error messages include relevant details (API error messages propagated)
 
 ---
 

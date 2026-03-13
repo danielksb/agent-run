@@ -23,4 +23,23 @@ pub struct AppConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn test_parse_prompt_argument() {
+        let cli = Cli::parse_from(["agent-run", "--prompt", "Hello"]);
+        assert_eq!(cli.prompt, Some("Hello".to_string()));
+    }
+
+    #[test]
+    fn test_parse_timeout_argument() {
+        let cli = Cli::parse_from(["agent-run", "-p", "Hi", "--timeout", "30"]);
+        assert_eq!(cli.timeout, 30);
+    }
+
+    #[test]
+    fn test_default_timeout() {
+        let cli = Cli::parse_from(["agent-run", "-p", "Hi"]);
+        assert_eq!(cli.timeout, 10);
+    }
 }

@@ -54,28 +54,28 @@ struct AppConfig {
 ```
 Also defined `Cli` struct with clap derive macros for argument parsing.
 
-### 2.2 TDD: CLI Argument Parsing
+### 2.2 TDD: CLI Argument Parsing ✓
 
-#### Test: Parse --prompt argument
-- [ ] **Write test:** `test_parse_prompt_argument`
+#### Test: Parse --prompt argument ✓
+- [x] **Write test:** `test_parse_prompt_argument`
   - Given: CLI args `["agent-run", "--prompt", "Hello"]`
-  - Expected: `AppConfig.prompt == "Hello"`
-- [ ] **Verify test fails** (no implementation yet)
-- [ ] **Implement:** Create CLI struct using `clap` derive macros with `-p`/`--prompt` argument
+  - Expected: `cli.prompt == Some("Hello")`
+- [x] **Verify test passes** (Cli struct already implemented in 2.1)
+- [x] **Implement:** Cli struct with clap derive macros already has `-p`/`--prompt` argument
 
-#### Test: Parse --timeout argument
-- [ ] **Write test:** `test_parse_timeout_argument`
+#### Test: Parse --timeout argument ✓
+- [x] **Write test:** `test_parse_timeout_argument`
   - Given: CLI args `["agent-run", "-p", "Hi", "--timeout", "30"]`
-  - Expected: `AppConfig.timeout_secs == 30`
-- [ ] **Verify test fails**
-- [ ] **Implement:** Add `-t`/`--timeout` argument with default value of 10
+  - Expected: `cli.timeout == 30`
+- [x] **Verify test passes**
+- [x] **Implement:** `-t`/`--timeout` argument with default value of 10
 
-#### Test: Default timeout value
-- [ ] **Write test:** `test_default_timeout`
+#### Test: Default timeout value ✓
+- [x] **Write test:** `test_default_timeout`
   - Given: CLI args without `--timeout`
-  - Expected: `AppConfig.timeout_secs == 10`
-- [ ] **Verify test fails**
-- [ ] **Implement:** Set default value in clap
+  - Expected: `cli.timeout == 10`
+- [x] **Verify test passes**
+- [x] **Implement:** Default value set in clap
 
 ### 2.3 TDD: Environment Variable Loading
 

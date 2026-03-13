@@ -43,7 +43,7 @@ The application is structured into three main components:
 
 The `AppConfig` component collects all configuration from CLI arguments and environment variables.
 
-### 2.1 Define AppConfig Struct
+### 2.1 Define AppConfig Struct ✓
 ```rust
 struct AppConfig {
     api_key: String,
@@ -52,6 +52,7 @@ struct AppConfig {
     // Future: model, vendor
 }
 ```
+Also defined `Cli` struct with clap derive macros for argument parsing.
 
 ### 2.2 TDD: CLI Argument Parsing
 

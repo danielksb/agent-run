@@ -1,15 +1,14 @@
 use std::time::Duration;
 
-use crate::agent::{Agent, AgentError, AgentResponse, OPENAI_API_URL};
+use crate::agent::{Agent, AgentError, AgentResponse};
 use crate::config::AppConfig;
 
 pub fn execute(config: AppConfig) -> Result<AgentResponse, AgentError> {
-    let base_url = config.base_url.unwrap_or_else(|| OPENAI_API_URL.to_string());
-    let agent = Agent::with_base_url(
-        config.api_key,
-        Duration::from_secs(config.timeout_secs),
-        base_url,
-    );
+    let timeout = Duration::from_secs(config.timeout_secs);
+    let agent = match config.base_url {
+        Some(base_url) => Agent::with_base_url(config.api_key, timeout, base_url),
+        None => Agent::new(config.api_key, timeout),
+    };
     agent.send_request(&config.prompt)
 }
 

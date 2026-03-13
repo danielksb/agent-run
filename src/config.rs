@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::env;
-use std::io::{self, BufRead};
+use std::io::BufRead;
 
 pub const API_KEY_ENV_VAR: &str = "AGENTRUN_API_KEY";
 
@@ -65,11 +65,6 @@ pub fn get_prompt<R: BufRead>(cli_prompt: Option<String>, mut reader: R) -> Resu
     }
 
     Ok(trimmed.to_string())
-}
-
-pub fn get_prompt_from_stdin(cli_prompt: Option<String>) -> Result<String, ConfigError> {
-    let stdin = io::stdin();
-    get_prompt(cli_prompt, stdin.lock())
 }
 
 #[cfg(test)]

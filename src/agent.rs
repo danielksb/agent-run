@@ -100,8 +100,9 @@ impl LlmAgent for OpenAiAgent {
                 let body = resp.into_string().unwrap_or_default();
                 let error_msg = match status {
                     401 => "Unauthorized: Invalid API key".to_string(),
-                    429 => "Rate limit exceeded".to_string(),
-                    s if s >= 500 => format!("Server error: {}", s),
+                    429 => "Rate limit exceeded. Please wait and retry.".to_string(),
+                    503 => "Service temporarily unavailable (503). Please retry in a few seconds.".to_string(),
+                    s if s >= 500 => format!("Server error ({}). Please retry later.", s),
                     _ => {
                         if let Ok(parsed) = self.parse_response(&body) {
                             return Ok(parsed);
@@ -200,8 +201,9 @@ impl LlmAgent for GeminiAgent {
                 let body = resp.into_string().unwrap_or_default();
                 let error_msg = match status {
                     401 => "Unauthorized: Invalid API key".to_string(),
-                    429 => "Rate limit exceeded".to_string(),
-                    s if s >= 500 => format!("Server error: {}", s),
+                    429 => "Rate limit exceeded. Please wait and retry.".to_string(),
+                    503 => "Service temporarily unavailable (503). Please retry in a few seconds.".to_string(),
+                    s if s >= 500 => format!("Server error ({}). Please retry later.", s),
                     _ => {
                         if let Ok(parsed) = self.parse_response(&body) {
                             return Ok(parsed);

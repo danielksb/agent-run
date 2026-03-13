@@ -31,15 +31,6 @@ pub struct OpenAiAgent {
 }
 
 impl OpenAiAgent {
-    pub fn new(api_key: String, timeout: Duration) -> Self {
-        Self {
-            api_key,
-            timeout,
-            base_url: OPENAI_API_URL.to_string(),
-            model: DEFAULT_OPENAI_MODEL.to_string(),
-        }
-    }
-
     pub fn with_config(api_key: String, timeout: Duration, base_url: Option<String>, model: Option<String>) -> Self {
         Self {
             api_key,
@@ -135,15 +126,6 @@ pub struct GeminiAgent {
 }
 
 impl GeminiAgent {
-    pub fn new(api_key: String, timeout: Duration) -> Self {
-        Self {
-            api_key,
-            timeout,
-            base_url: GEMINI_API_URL.to_string(),
-            model: DEFAULT_GEMINI_MODEL.to_string(),
-        }
-    }
-
     pub fn with_config(api_key: String, timeout: Duration, base_url: Option<String>, model: Option<String>) -> Self {
         Self {
             api_key,
@@ -329,7 +311,7 @@ mod tests {
 
     #[test]
     fn test_openai_implements_trait() {
-        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = OpenAiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
         let _: &dyn LlmAgent = &agent;
     }
 
@@ -338,7 +320,7 @@ mod tests {
         let api_key = "test_api_key".to_string();
         let timeout = Duration::from_secs(30);
 
-        let agent = OpenAiAgent::new(api_key.clone(), timeout);
+        let agent = OpenAiAgent::with_config(api_key.clone(), timeout, None, None);
 
         assert_eq!(agent.api_key, api_key);
         assert_eq!(agent.timeout, timeout);
@@ -374,7 +356,7 @@ mod tests {
 
     #[test]
     fn test_build_chat_request() {
-        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = OpenAiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
 
         let request = agent.build_chat_request("Hello");
 
@@ -386,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_parse_openai_success_response() {
-        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = OpenAiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
         let json = r#"{
             "choices": [
                 {
@@ -406,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_parse_openai_error_response() {
-        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = OpenAiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
         let json = r#"{
             "error": {
                 "message": "Invalid API key",
@@ -424,7 +406,7 @@ mod tests {
 
     #[test]
     fn test_gemini_implements_trait() {
-        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = GeminiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
         let _: &dyn LlmAgent = &agent;
     }
 
@@ -433,7 +415,7 @@ mod tests {
         let api_key = "test_api_key".to_string();
         let timeout = Duration::from_secs(30);
 
-        let agent = GeminiAgent::new(api_key.clone(), timeout);
+        let agent = GeminiAgent::with_config(api_key.clone(), timeout, None, None);
 
         assert_eq!(agent.api_key, api_key);
         assert_eq!(agent.timeout, timeout);
@@ -443,7 +425,7 @@ mod tests {
 
     #[test]
     fn test_gemini_request_format() {
-        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = GeminiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
 
         let request = agent.build_request("Hello");
 
@@ -454,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_gemini_url_format() {
-        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = GeminiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
 
         let url = agent.build_url();
 
@@ -480,7 +462,7 @@ mod tests {
 
     #[test]
     fn test_gemini_response_parsing() {
-        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = GeminiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
         let json = r#"{
             "candidates": [
                 {
@@ -501,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_gemini_error_response() {
-        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let agent = GeminiAgent::with_config("key".to_string(), Duration::from_secs(10), None, None);
         let json = r#"{
             "error": {
                 "message": "API key not valid",

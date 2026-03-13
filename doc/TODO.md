@@ -21,11 +21,11 @@ The application is structured into three main components:
 
 ---
 
-## Phase 1: Project Setup
+## Phase 1: Project Setup ✓
 
 ### 1.1 Update Cargo.toml
-- [ ] Keep Rust edition 2024 as specified
-- [ ] Add required dependencies:
+- [x] Keep Rust edition 2024 as specified
+- [x] Add required dependencies:
   - `clap` - CLI argument parsing with derive macros
   - `ureq` - Synchronous HTTP client (no async complexity needed)
   - `serde` / `serde_json` - JSON serialization for OpenAI API
@@ -33,9 +33,9 @@ The application is structured into three main components:
   - `pact_consumer` - Pact testing framework (dev dependency)
 
 ### 1.2 Create .env.template
-- [ ] Create `.env.template` file with `AGENTRUN_API_KEY=your_key_here`
-- [ ] Add `.env` to `.gitignore` to prevent accidental commits of secrets
-- [ ] Add `pacts/` to `.gitignore`
+- [x] Create `.env.template` file with `AGENTRUN_API_KEY=your_key_here`
+- [x] Add `.env` to `.gitignore` to prevent accidental commits of secrets
+- [x] Add `pacts/` to `.gitignore`
 
 ---
 

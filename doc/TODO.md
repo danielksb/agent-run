@@ -160,14 +160,14 @@ struct Choice {
 - [x] **Verify test passes**
 - [x] **Implement:** `Agent::new(api_key, timeout)` constructor
 
-### 3.3 TDD: Request Building
+### 3.3 TDD: Request Building ✓
 
-#### Test: Build chat request
-- [ ] **Write test:** `test_build_chat_request`
+#### Test: Build chat request ✓
+- [x] **Write test:** `test_build_chat_request`
   - Given: Prompt "Hello"
   - Expected: `ChatRequest` with user message containing "Hello"
-- [ ] **Verify test fails**
-- [ ] **Implement:** Method to build `ChatRequest` from prompt
+- [x] **Verify test passes**
+- [x] **Implement:** `Agent::build_chat_request(prompt)` method
 
 ### 3.4 TDD: Response Parsing
 

@@ -322,21 +322,221 @@ fn main() -> ExitCode {
 
 ---
 
-## Future Phases (Out of Initial Scope)
+## Phase 7: TOML Configuration File (TDD)
 
-### Phase 7: Multiple LLM Vendors
-- [ ] Abstract Agent behind trait
+Support for configuration via TOML file with vendor-specific settings.
+
+### 7.1 Add Dependencies
+- [ ] Add `toml` crate for TOML parsing
+- [ ] Add `dirs` crate for cross-platform home directory
+
+### 7.2 Define Configuration Structs
+```rust
+#[derive(Deserialize, Default)]
+struct TomlConfig {
+    general: Option<GeneralConfig>,
+    openai: Option<VendorConfig>,
+    gemini: Option<VendorConfig>,
+}
+
+#[derive(Deserialize, Default)]
+struct GeneralConfig {
+    timeout: Option<u64>,
+    default_vendor: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+struct VendorConfig {
+    base_url: Option<String>,
+    model: Option<String>,
+}
+```
+
+### 7.3 TDD: Config File Loading
+
+#### Test: Load config from specified path
+- [ ] **Write test:** `test_load_config_from_path`
+  - Given: `--config /path/to/config.toml`
+  - Expected: Config loaded from specified path
+
+#### Test: Load config from home directory
+- [ ] **Write test:** `test_load_config_from_home`
+  - Given: No `--config` arg, `~/.agent-run.toml` exists
+  - Expected: Config loaded from home directory
+
+#### Test: Default config when file missing
+- [ ] **Write test:** `test_default_config_when_missing`
+  - Given: No config file exists
+  - Expected: Built-in defaults used
+
+#### Test: Parse general section
+- [ ] **Write test:** `test_parse_general_section`
+  - Given: TOML with `[general]` section
+  - Expected: timeout and default_vendor parsed
+
+#### Test: Parse vendor sections
+- [ ] **Write test:** `test_parse_vendor_sections`
+  - Given: TOML with `[openai]` and `[gemini]` sections
+  - Expected: base_url and model parsed for each vendor
+
+### 7.4 TDD: CLI Config Flag
+
+#### Test: --config flag
+- [ ] **Write test:** `test_config_cli_flag`
+  - Given: CLI args with `--config path/to/file.toml`
+  - Expected: Config path stored in CLI struct
+
+#### Test: --vendor flag
+- [ ] **Write test:** `test_vendor_cli_flag`
+  - Given: CLI args with `--vendor gemini`
+  - Expected: Vendor selection stored in CLI struct
+
+#### Test: --model flag
+- [ ] **Write test:** `test_model_cli_flag`
+  - Given: CLI args with `--model gpt-4`
+  - Expected: Model override stored in CLI struct
+
+### 7.5 TDD: Configuration Merging
+
+#### Test: CLI overrides config file
+- [ ] **Write test:** `test_cli_overrides_config`
+  - Given: Config file has timeout=30, CLI has --timeout 60
+  - Expected: Final timeout is 60
+
+#### Test: Config file overrides defaults
+- [ ] **Write test:** `test_config_overrides_defaults`
+  - Given: Config file has timeout=30, no CLI override
+  - Expected: Final timeout is 30
+
+---
+
+## Phase 8: Multi-Vendor Agent Abstraction (TDD)
+
+Abstract agent communication behind a trait to support multiple vendors.
+
+### 8.1 Define Agent Trait
+```rust
+pub trait LlmAgent {
+    fn send_request(&self, prompt: &str) -> Result<AgentResponse, AgentError>;
+}
+```
+
+### 8.2 TDD: Refactor OpenAI Agent
+
+#### Test: OpenAI implements LlmAgent trait
+- [ ] **Write test:** `test_openai_implements_trait`
+  - Given: OpenAI agent instance
+  - Expected: Can call trait methods
+
+#### Test: OpenAI uses configured model
+- [ ] **Write test:** `test_openai_uses_configured_model`
+  - Given: Config with model="gpt-4"
+  - Expected: Request uses specified model
+
+#### Test: OpenAI uses configured base_url
+- [ ] **Write test:** `test_openai_uses_configured_base_url`
+  - Given: Config with custom base_url
+  - Expected: Request sent to custom URL
+
+### 8.3 TDD: Implement Gemini Agent
+
+#### Test: Gemini request format
+- [ ] **Write test:** `test_gemini_request_format`
+  - Given: Prompt "Hello"
+  - Expected: Request body matches Gemini API format
+  ```json
+  {
+    "contents": [{
+      "parts": [{"text": "Hello"}]
+    }]
+  }
+  ```
+
+#### Test: Gemini response parsing
+- [ ] **Write test:** `test_gemini_response_parsing`
+  - Given: Valid Gemini API response
+  - Expected: Content extracted from `candidates[0].content.parts[0].text`
+
+#### Test: Gemini authentication header
+- [ ] **Write test:** `test_gemini_auth_header`
+  - Given: API key
+  - Expected: Request has `x-goog-api-key` header (not Bearer token)
+
+#### Test: Gemini URL format
+- [ ] **Write test:** `test_gemini_url_format`
+  - Given: Model "gemini-2.0-flash"
+  - Expected: URL is `{base_url}/v1beta/models/gemini-2.0-flash:generateContent`
+
+### 8.4 Pact Tests: Gemini API
+
+#### Pact: Gemini successful completion
+- [ ] **Write pact test:** `pact_gemini_successful_completion`
+  - Define expected Gemini request/response format
+  - Mock Gemini endpoint
+
+#### Pact: Gemini error responses
+- [ ] **Write pact test:** `pact_gemini_error_responses`
+  - Test 401, 429, 500 error handling
+
+### 8.5 TDD: Vendor Selection
+
+#### Test: Select vendor from config
+- [ ] **Write test:** `test_select_vendor_from_config`
+  - Given: Config with default_vendor="gemini"
+  - Expected: Gemini agent used
+
+#### Test: Select vendor from CLI flag
+- [ ] **Write test:** `test_select_vendor_from_cli`
+  - Given: --vendor openai
+  - Expected: OpenAI agent used (overrides config)
+
+#### Test: Invalid vendor error
+- [ ] **Write test:** `test_invalid_vendor_error`
+  - Given: --vendor unknown
+  - Expected: Error with list of valid vendors
+
+---
+
+## Phase 9: Update Execution & Main
+
+### 9.1 Update AppConfig
+- [ ] Add `vendor: String` field
+- [ ] Add `model: Option<String>` field
+- [ ] Add `config_path: Option<PathBuf>` field
+
+### 9.2 Update main() Flow
+```
+1. Parse CLI args
+2. Load TOML config (from --config or ~/.agent-run.toml)
+3. Merge config: CLI > TOML > defaults
+4. Load API key from environment
+5. Get prompt from CLI or stdin
+6. Create appropriate vendor agent
+7. Execute and handle result
+```
+
+### 9.3 Integration Testing
+- [ ] Test OpenAI with config file
+- [ ] Test Gemini with config file
+- [ ] Test vendor switching via CLI
+- [ ] Test config file in home directory
+
+---
+
+## Future Phases
+
+### Phase 10: Additional Vendors
 - [ ] Implement Ollama support (local LLM)
-- [ ] Implement other vendors (Anthropic, etc.)
-- [ ] Add `--vendor` CLI flag
+- [ ] Implement Anthropic Claude support
+- [ ] Implement Azure OpenAI support
 
-### Phase 8: Tool Support
+### Phase 11: Tool Support
 - [ ] Implement web search tool
 - [ ] Implement filesystem access tools
 - [ ] Handle tool calls in API response
 - [ ] Execute tools and continue conversation
 
-### Phase 9: Enhanced Features
+### Phase 12: Enhanced Features
 - [ ] Streaming response output
 - [ ] Conversation history from file
 - [ ] Custom system prompts from file

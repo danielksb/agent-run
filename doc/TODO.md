@@ -119,7 +119,8 @@ Also defined `Cli` struct with clap derive macros for argument parsing.
 
 The `Agent` component wraps communication with the LLM API.
 
-### 3.1 Define Agent Types
+### 3.1 Define Agent Types ✓
+Created `src/agent.rs` with:
 ```rust
 struct Agent {
     api_key: String,
@@ -130,7 +131,7 @@ struct AgentResponse {
     content: String,
 }
 
-// OpenAI API types
+// OpenAI API types (with Serialize/Deserialize)
 struct ChatRequest {
     model: String,
     messages: Vec<Message>,

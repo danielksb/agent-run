@@ -77,21 +77,21 @@ Also defined `Cli` struct with clap derive macros for argument parsing.
 - [x] **Verify test passes**
 - [x] **Implement:** Default value set in clap
 
-### 2.3 TDD: Environment Variable Loading
+### 2.3 TDD: Environment Variable Loading ✓
 
-#### Test: Load API key from environment
-- [ ] **Write test:** `test_load_api_key_from_env`
+#### Test: Load API key from environment ✓
+- [x] **Write test:** `test_load_api_key_from_env`
   - Given: `AGENTRUN_API_KEY=test_key` in environment
-  - Expected: `AppConfig.api_key == "test_key"`
-- [ ] **Verify test fails**
-- [ ] **Implement:** Use `dotenvy::dotenv().ok()` then `std::env::var("AGENTRUN_API_KEY")`
+  - Expected: `load_api_key() == Ok("test_key")`
+- [x] **Verify test passes**
+- [x] **Implement:** `load_api_key()` uses `dotenvy::dotenv().ok()` then `std::env::var("AGENTRUN_API_KEY")`
 
-#### Test: Missing API key error
-- [ ] **Write test:** `test_missing_api_key_error`
+#### Test: Missing API key error ✓
+- [x] **Write test:** `test_missing_api_key_error`
   - Given: No `AGENTRUN_API_KEY` in environment
   - Expected: Error with message containing "AGENTRUN_API_KEY"
-- [ ] **Verify test fails**
-- [ ] **Implement:** Return descriptive error when env var missing
+- [x] **Verify test passes**
+- [x] **Implement:** Returns `ConfigError` with descriptive message when env var missing
 
 ### 2.4 TDD: Stdin Input Handling
 

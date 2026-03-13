@@ -187,10 +187,10 @@ struct Choice {
 
 ### 3.5 Pact Tests: LLM API Interaction ✓
 
-**Pact file output:** Generated pact files are stored in `pacts/` at the project root.
-- Configured via `PACT_OUTPUT_DIR` environment variable set in tests
-- Default location (without configuration) would be `target/pacts/`
-- Generated file: `pacts/agent-run-openai-api.json`
+**Pact file output:**
+- Default location: `target/pacts/` (used when running `cargo test`)
+- Custom location: Set `PACT_OUTPUT_DIR=pacts` in `.env` (copy from `.env.template`)
+- Generated file: `agent-run-openai-api.json`
 
 #### Pact: Successful chat completion ✓
 - [x] **Write pact test:** `pact_successful_completion`
@@ -225,33 +225,36 @@ struct Choice {
 
 ---
 
-## Phase 4: Execution Component (TDD)
+## Phase 4: Execution Component (TDD) ✓
 
 The `Execution` component orchestrates the application flow.
 
-### 4.1 Define Execution Interface
+### 4.1 Define Execution Interface ✓
+Created `src/execution.rs` with:
 ```rust
-fn execute(config: AppConfig) -> Result<AgentResponse, Error>;
+pub fn execute(config: AppConfig) -> Result<AgentResponse, AgentError>;
 ```
 
-### 4.2 TDD: Execution Flow
+### 4.2 TDD: Execution Flow ✓
 
-#### Test: Successful execution
-- [ ] **Write test:** `test_successful_execution`
+#### Test: Successful execution ✓
+- [x] **Write test:** `test_successful_execution`
   - Given: Valid `AppConfig` with prompt and API key
   - Expected: `AgentResponse` with content
-- [ ] **Verify test fails**
-- [ ] **Implement:** 
-  1. Create `Agent` from config
-  2. Call agent with prompt
+- [x] **Verify test passes**
+- [x] **Implement:** 
+  1. Create `Agent` from config (with optional base_url)
+  2. Call `agent.send_request()` with prompt
   3. Return response
 
-#### Test: Propagate agent errors
-- [ ] **Write test:** `test_execution_propagates_errors`
-  - Given: Agent returns error
+#### Test: Propagate agent errors ✓
+- [x] **Write test:** `test_execution_propagates_errors`
+  - Given: Agent returns error (401)
   - Expected: Error propagated from execution
-- [ ] **Verify test fails**
-- [ ] **Implement:** Error propagation
+- [x] **Verify test passes**
+- [x] **Implement:** Error propagation via `Result` type
+
+**Note:** Added `base_url: Option<String>` to `AppConfig` for test mocking
 
 ---
 

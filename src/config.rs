@@ -22,6 +22,7 @@ pub struct AppConfig {
     pub api_key: String,
     pub prompt: String,
     pub timeout_secs: u64,
+    pub base_url: Option<String>,
 }
 
 #[derive(Debug)]

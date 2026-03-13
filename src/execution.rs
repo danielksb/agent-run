@@ -100,8 +100,8 @@ mod tests {
             .interaction("execution gemini completion", "", |mut i| {
                 i.request
                     .post()
-                    .path("/v1beta/models/gemini-2.0-flash:generateContent")
-                    .header("x-goog-api-key", "test_gemini_key")
+                    .path("/v1beta/models/gemini-flash-latest:generateContent")
+                    .header("X-goog-api-key", "test_gemini_key")
                     .header("Content-Type", "application/json");
                 i.response
                     .ok()

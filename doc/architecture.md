@@ -43,7 +43,7 @@ model = "gpt-4o-mini"
 
 [gemini]
 base_url = "https://generativelanguage.googleapis.com"
-model = "gemini-2.0-flash"
+model = "gemini-flash-latest"
 ```
 
 ### Configuration Priority

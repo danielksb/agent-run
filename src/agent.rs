@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 pub const DEFAULT_OPENAI_MODEL: &str = "gpt-4o-mini";
-pub const DEFAULT_GEMINI_MODEL: &str = "gemini-2.0-flash";
+pub const DEFAULT_GEMINI_MODEL: &str = "gemini-flash-latest";
 pub const OPENAI_API_URL: &str = "https://api.openai.com";
 pub const GEMINI_API_URL: &str = "https://generativelanguage.googleapis.com";
 
@@ -203,7 +203,7 @@ impl LlmAgent for GeminiAgent {
 
         let response = agent
             .post(&url)
-            .set("x-goog-api-key", &self.api_key)
+            .set("X-goog-api-key", &self.api_key)
             .set("Content-Type", "application/json")
             .send_json(&request);
 
@@ -719,7 +719,7 @@ mod pact_tests {
                 i.request
                     .post()
                     .path(format!("/v1beta/models/{}:generateContent", DEFAULT_GEMINI_MODEL))
-                    .header("x-goog-api-key", "test_gemini_key")
+                    .header("X-goog-api-key", "test_gemini_key")
                     .header("Content-Type", "application/json")
                     .json_body(json_pattern!({
                         "contents": each_like!({
@@ -764,7 +764,7 @@ mod pact_tests {
                 i.request
                     .post()
                     .path(format!("/v1beta/models/{}:generateContent", DEFAULT_GEMINI_MODEL))
-                    .header("x-goog-api-key", "invalid_key");
+                    .header("X-goog-api-key", "invalid_key");
                 i.response
                     .status(401)
                     .header("Content-Type", "application/json")

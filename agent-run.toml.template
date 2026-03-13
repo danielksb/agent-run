@@ -22,5 +22,5 @@ model = "gpt-4o-mini"
 # Google Gemini API base URL (default: https://generativelanguage.googleapis.com)
 base_url = "https://generativelanguage.googleapis.com"
 
-# Model to use (default: gemini-2.0-flash)
-model = "gemini-2.0-flash"
+# Model to use (default: gemini-flash-latest)
+model = "gemini-flash-latest"

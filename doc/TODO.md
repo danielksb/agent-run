@@ -260,21 +260,21 @@ pub fn execute(config: AppConfig) -> Result<AgentResponse, AgentError>;
 
 ## Phase 5: Main Function & Output
 
-### 5.1 TDD: Output Formatting
+### 5.1 TDD: Output Formatting ✓
 
-#### Test: Write success to stdout
-- [ ] **Write test:** `test_output_success_to_stdout`
+#### Test: Write success to stdout ✓
+- [x] **Write test:** `test_output_success_to_stdout`
   - Given: Successful `AgentResponse`
-  - Expected: Content written to stdout, exit code 0
-- [ ] **Verify test fails**
-- [ ] **Implement:** Print response content to stdout
+  - Expected: Content written to writer (no trailing newline)
+- [x] **Verify test passes**
+- [x] **Implement:** `write_success(response, writer)` using generic `Write` trait
 
-#### Test: Write error to stderr
-- [ ] **Write test:** `test_output_error_to_stderr`
-  - Given: Error result
-  - Expected: Error message written to stderr, exit code 1
-- [ ] **Verify test fails**
-- [ ] **Implement:** Print formatted error to stderr
+#### Test: Write error to stderr ✓
+- [x] **Write test:** `test_output_error_to_stderr`
+  - Given: Error message
+  - Expected: Formatted error message written to writer
+- [x] **Verify test passes**
+- [x] **Implement:** `write_error(error, writer)` with format `agent-run: error: <message>`
 
 ### 5.2 Implement main()
 - [ ] Wire together all components:

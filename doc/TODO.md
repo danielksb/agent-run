@@ -151,14 +151,14 @@ struct Choice {
 }
 ```
 
-### 3.2 TDD: Agent Creation
+### 3.2 TDD: Agent Creation ✓
 
-#### Test: Create agent with config
-- [ ] **Write test:** `test_create_agent`
+#### Test: Create agent with config ✓
+- [x] **Write test:** `test_create_agent`
   - Given: API key and timeout
   - Expected: Agent instance created successfully
-- [ ] **Verify test fails**
-- [ ] **Implement:** Agent constructor
+- [x] **Verify test passes**
+- [x] **Implement:** `Agent::new(api_key, timeout)` constructor
 
 ### 3.3 TDD: Request Building
 

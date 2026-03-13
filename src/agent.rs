@@ -2,8 +2,14 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 pub struct Agent {
-    pub api_key: String,
-    pub timeout: Duration,
+    api_key: String,
+    timeout: Duration,
+}
+
+impl Agent {
+    pub fn new(api_key: String, timeout: Duration) -> Self {
+        Self { api_key, timeout }
+    }
 }
 
 #[derive(Debug)]
@@ -36,4 +42,15 @@ pub struct Choice {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_create_agent() {
+        let api_key = "test_api_key".to_string();
+        let timeout = Duration::from_secs(30);
+
+        let agent = Agent::new(api_key.clone(), timeout);
+
+        assert_eq!(agent.api_key, api_key);
+        assert_eq!(agent.timeout, timeout);
+    }
 }

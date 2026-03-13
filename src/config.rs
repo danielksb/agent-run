@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::env;
+use std::io::{self, BufRead};
 
 pub const API_KEY_ENV_VAR: &str = "AGENTRUN_API_KEY";
 
@@ -41,6 +42,33 @@ pub fn load_api_key() -> Result<String, ConfigError> {
     env::var(API_KEY_ENV_VAR).map_err(|_| ConfigError {
         message: format!("Environment variable {} is not set", API_KEY_ENV_VAR),
     })
+}
+
+pub fn get_prompt<R: BufRead>(cli_prompt: Option<String>, mut reader: R) -> Result<String, ConfigError> {
+    let prompt = match cli_prompt {
+        Some(p) => p,
+        None => {
+            let mut input = String::new();
+            reader.read_to_string(&mut input).map_err(|e| ConfigError {
+                message: format!("Failed to read from stdin: {}", e),
+            })?;
+            input
+        }
+    };
+
+    let trimmed = prompt.trim();
+    if trimmed.is_empty() {
+        return Err(ConfigError {
+            message: "Prompt cannot be empty".to_string(),
+        });
+    }
+
+    Ok(trimmed.to_string())
+}
+
+pub fn get_prompt_from_stdin(cli_prompt: Option<String>) -> Result<String, ConfigError> {
+    let stdin = io::stdin();
+    get_prompt(cli_prompt, stdin.lock())
 }
 
 #[cfg(test)]
@@ -87,5 +115,50 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(error.message.contains(API_KEY_ENV_VAR));
+    }
+
+    #[test]
+    fn test_read_prompt_from_stdin() {
+        let input = b"Hello from stdin";
+        let reader = &input[..];
+        
+        let result = get_prompt(None, reader);
+        
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "Hello from stdin");
+    }
+
+    #[test]
+    fn test_prompt_from_cli_argument() {
+        let input = b"ignored stdin";
+        let reader = &input[..];
+        
+        let result = get_prompt(Some("CLI prompt".to_string()), reader);
+        
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "CLI prompt");
+    }
+
+    #[test]
+    fn test_empty_prompt_error() {
+        let input = b"   \n\t  ";
+        let reader = &input[..];
+        
+        let result = get_prompt(None, reader);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.message.to_lowercase().contains("empty"));
+    }
+
+    #[test]
+    fn test_prompt_trimmed() {
+        let input = b"  hello world  \n";
+        let reader = &input[..];
+        
+        let result = get_prompt(None, reader);
+        
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "hello world");
     }
 }

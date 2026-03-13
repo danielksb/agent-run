@@ -93,21 +93,25 @@ Also defined `Cli` struct with clap derive macros for argument parsing.
 - [x] **Verify test passes**
 - [x] **Implement:** Returns `ConfigError` with descriptive message when env var missing
 
-### 2.4 TDD: Stdin Input Handling
+### 2.4 TDD: Stdin Input Handling ✓
 
-#### Test: Read prompt from stdin when no --prompt
-- [ ] **Write test:** `test_read_prompt_from_stdin`
+#### Test: Read prompt from stdin when no --prompt ✓
+- [x] **Write test:** `test_read_prompt_from_stdin`
   - Given: No `--prompt` arg, stdin contains "Hello from stdin"
-  - Expected: `AppConfig.prompt == "Hello from stdin"`
-- [ ] **Verify test fails**
-- [ ] **Implement:** Use `std::io::stdin().read_to_string()` when prompt arg is None
+  - Expected: `get_prompt(None, reader) == Ok("Hello from stdin")`
+- [x] **Verify test passes**
+- [x] **Implement:** `get_prompt()` reads from provided reader when prompt arg is None
 
-#### Test: Empty prompt error
-- [ ] **Write test:** `test_empty_prompt_error`
+#### Test: Empty prompt error ✓
+- [x] **Write test:** `test_empty_prompt_error`
   - Given: Empty prompt (whitespace only)
   - Expected: Error with message about empty prompt
-- [ ] **Verify test fails**
-- [ ] **Implement:** Validate prompt is not empty after trimming
+- [x] **Verify test passes**
+- [x] **Implement:** Validates prompt is not empty after trimming
+
+**Additional tests added:**
+- `test_prompt_from_cli_argument` - CLI argument takes precedence over stdin
+- `test_prompt_trimmed` - Prompt whitespace is trimmed
 
 ---
 

@@ -417,6 +417,8 @@ struct VendorConfig {
 Abstract agent communication behind a trait to support multiple vendors.
 
 ### 8.1 Define Agent Trait
+- [x] Implement `LlmAgent` trait in `src/agent.rs`
+
 ```rust
 pub trait LlmAgent {
     fn send_request(&self, prompt: &str) -> Result<AgentResponse, AgentError>;
@@ -426,24 +428,24 @@ pub trait LlmAgent {
 ### 8.2 TDD: Refactor OpenAI Agent
 
 #### Test: OpenAI implements LlmAgent trait
-- [ ] **Write test:** `test_openai_implements_trait`
+- [x] **Write test:** `test_openai_implements_trait`
   - Given: OpenAI agent instance
   - Expected: Can call trait methods
 
 #### Test: OpenAI uses configured model
-- [ ] **Write test:** `test_openai_uses_configured_model`
+- [x] **Write test:** `test_openai_uses_configured_model`
   - Given: Config with model="gpt-4"
   - Expected: Request uses specified model
 
 #### Test: OpenAI uses configured base_url
-- [ ] **Write test:** `test_openai_uses_configured_base_url`
+- [x] **Write test:** `test_openai_uses_configured_base_url`
   - Given: Config with custom base_url
   - Expected: Request sent to custom URL
 
 ### 8.3 TDD: Implement Gemini Agent
 
 #### Test: Gemini request format
-- [ ] **Write test:** `test_gemini_request_format`
+- [x] **Write test:** `test_gemini_request_format`
   - Given: Prompt "Hello"
   - Expected: Request body matches Gemini API format
   ```json
@@ -455,45 +457,46 @@ pub trait LlmAgent {
   ```
 
 #### Test: Gemini response parsing
-- [ ] **Write test:** `test_gemini_response_parsing`
+- [x] **Write test:** `test_gemini_response_parsing`
   - Given: Valid Gemini API response
   - Expected: Content extracted from `candidates[0].content.parts[0].text`
 
 #### Test: Gemini authentication header
-- [ ] **Write test:** `test_gemini_auth_header`
+- [x] **Write test:** `test_gemini_auth_header` (verified in pact test `pact_gemini_successful_completion`)
   - Given: API key
   - Expected: Request has `x-goog-api-key` header (not Bearer token)
 
 #### Test: Gemini URL format
-- [ ] **Write test:** `test_gemini_url_format`
+- [x] **Write test:** `test_gemini_url_format`
   - Given: Model "gemini-2.0-flash"
   - Expected: URL is `{base_url}/v1beta/models/gemini-2.0-flash:generateContent`
 
 ### 8.4 Pact Tests: Gemini API
 
 #### Pact: Gemini successful completion
-- [ ] **Write pact test:** `pact_gemini_successful_completion`
+- [x] **Write pact test:** `pact_gemini_successful_completion`
   - Define expected Gemini request/response format
   - Mock Gemini endpoint
 
 #### Pact: Gemini error responses
-- [ ] **Write pact test:** `pact_gemini_error_responses`
+- [x] **Write pact test:** `pact_gemini_error_responses`
   - Test 401, 429, 500 error handling
+  - Implemented as: `pact_gemini_invalid_api_key`, `pact_gemini_rate_limit`, `pact_gemini_server_error`
 
 ### 8.5 TDD: Vendor Selection
 
 #### Test: Select vendor from config
-- [ ] **Write test:** `test_select_vendor_from_config`
+- [x] **Write test:** `test_select_vendor_openai`, `test_select_vendor_gemini`
   - Given: Config with default_vendor="gemini"
   - Expected: Gemini agent used
 
 #### Test: Select vendor from CLI flag
-- [ ] **Write test:** `test_select_vendor_from_cli`
+- [x] **Write test:** `test_cli_overrides_config` (in config tests)
   - Given: --vendor openai
   - Expected: OpenAI agent used (overrides config)
 
 #### Test: Invalid vendor error
-- [ ] **Write test:** `test_invalid_vendor_error`
+- [x] **Write test:** `test_invalid_vendor_error`
   - Given: --vendor unknown
   - Expected: Error with list of valid vendors
 
@@ -502,11 +505,13 @@ pub trait LlmAgent {
 ## Phase 9: Update Execution & Main
 
 ### 9.1 Update AppConfig
-- [ ] Add `vendor: String` field
-- [ ] Add `model: Option<String>` field
-- [ ] Add `config_path: Option<PathBuf>` field
+- [x] Add `vendor: String` field (completed in Phase 7)
+- [x] Add `model: Option<String>` field (completed in Phase 7)
+- [x] Add `config_path: Option<PathBuf>` field (completed in Phase 7 as CLI `--config`)
 
 ### 9.2 Update main() Flow
+- [x] Implemented in Phases 7 & 8
+
 ```
 1. Parse CLI args
 2. Load TOML config (from --config or ~/.agent-run.toml)
@@ -518,10 +523,10 @@ pub trait LlmAgent {
 ```
 
 ### 9.3 Integration Testing
-- [ ] Test OpenAI with config file
-- [ ] Test Gemini with config file
-- [ ] Test vendor switching via CLI
-- [ ] Test config file in home directory
+- [x] Test OpenAI with config file (`test_successful_execution` in execution.rs)
+- [x] Test Gemini with config file (`test_gemini_execution` in execution.rs)
+- [x] Test vendor switching via CLI (`test_cli_overrides_config` in config.rs)
+- [ ] Test config file in home directory (manual testing required)
 
 ---
 

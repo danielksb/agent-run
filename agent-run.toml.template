@@ -1,0 +1,26 @@
+# agent-run Configuration File Template
+# 
+# Copy this file to ~/.agent-run.toml or specify with --config flag
+# All settings are optional - defaults will be used if not specified
+
+[general]
+# Request timeout in seconds (default: 10)
+timeout = 30
+
+# Default LLM vendor to use: "openai" or "gemini" (default: "openai")
+default_vendor = "openai"
+
+[openai]
+# OpenAI API base URL (default: https://api.openai.com)
+# Useful for OpenAI-compatible APIs (e.g., Azure OpenAI, local proxies)
+base_url = "https://api.openai.com"
+
+# Model to use (default: gpt-4o-mini)
+model = "gpt-4o-mini"
+
+[gemini]
+# Google Gemini API base URL (default: https://generativelanguage.googleapis.com)
+base_url = "https://generativelanguage.googleapis.com"
+
+# Model to use (default: gemini-2.0-flash)
+model = "gemini-2.0-flash"

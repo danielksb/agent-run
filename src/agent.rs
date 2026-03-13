@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-pub const DEFAULT_MODEL: &str = "gpt-4o-mini";
+pub const DEFAULT_OPENAI_MODEL: &str = "gpt-4o-mini";
+pub const DEFAULT_GEMINI_MODEL: &str = "gemini-2.0-flash";
+pub const OPENAI_API_URL: &str = "https://api.openai.com";
+pub const GEMINI_API_URL: &str = "https://generativelanguage.googleapis.com";
 
 #[derive(Debug)]
 pub struct AgentError {
@@ -16,34 +19,39 @@ impl std::fmt::Display for AgentError {
 
 impl std::error::Error for AgentError {}
 
-pub const OPENAI_API_URL: &str = "https://api.openai.com";
+pub trait LlmAgent {
+    fn send_request(&self, prompt: &str) -> Result<AgentResponse, AgentError>;
+}
 
-pub struct Agent {
+pub struct OpenAiAgent {
     api_key: String,
     timeout: Duration,
     base_url: String,
+    model: String,
 }
 
-impl Agent {
+impl OpenAiAgent {
     pub fn new(api_key: String, timeout: Duration) -> Self {
         Self {
             api_key,
             timeout,
             base_url: OPENAI_API_URL.to_string(),
+            model: DEFAULT_OPENAI_MODEL.to_string(),
         }
     }
 
-    pub fn with_base_url(api_key: String, timeout: Duration, base_url: String) -> Self {
+    pub fn with_config(api_key: String, timeout: Duration, base_url: Option<String>, model: Option<String>) -> Self {
         Self {
             api_key,
             timeout,
-            base_url,
+            base_url: base_url.unwrap_or_else(|| OPENAI_API_URL.to_string()),
+            model: model.unwrap_or_else(|| DEFAULT_OPENAI_MODEL.to_string()),
         }
     }
 
     pub fn build_chat_request(&self, prompt: &str) -> ChatRequest {
         ChatRequest {
-            model: DEFAULT_MODEL.to_string(),
+            model: self.model.clone(),
             messages: vec![Message {
                 role: "user".to_string(),
                 content: prompt.to_string(),
@@ -51,7 +59,31 @@ impl Agent {
         }
     }
 
-    pub fn send_request(&self, prompt: &str) -> Result<AgentResponse, AgentError> {
+    fn parse_response(&self, json: &str) -> Result<AgentResponse, AgentError> {
+        let api_response: OpenAiApiResponse = serde_json::from_str(json).map_err(|e| AgentError {
+            message: format!("Failed to parse response: {}", e),
+        })?;
+
+        match api_response {
+            OpenAiApiResponse::Success(chat_response) => {
+                let content = chat_response
+                    .choices
+                    .first()
+                    .map(|c| c.message.content.clone())
+                    .ok_or_else(|| AgentError {
+                        message: "No choices in response".to_string(),
+                    })?;
+                Ok(AgentResponse { content })
+            }
+            OpenAiApiResponse::Error { error } => Err(AgentError {
+                message: format!("API error: {}", error.message),
+            }),
+        }
+    }
+}
+
+impl LlmAgent for OpenAiAgent {
+    fn send_request(&self, prompt: &str) -> Result<AgentResponse, AgentError> {
         let request = self.build_chat_request(prompt);
         let base = self.base_url.trim_end_matches('/');
         let url = format!("{}/v1/chat/completions", base);
@@ -93,27 +125,130 @@ impl Agent {
             }),
         }
     }
+}
 
-    pub fn parse_response(&self, json: &str) -> Result<AgentResponse, AgentError> {
-        let api_response: ApiResponse = serde_json::from_str(json).map_err(|e| AgentError {
+pub struct GeminiAgent {
+    api_key: String,
+    timeout: Duration,
+    base_url: String,
+    model: String,
+}
+
+impl GeminiAgent {
+    pub fn new(api_key: String, timeout: Duration) -> Self {
+        Self {
+            api_key,
+            timeout,
+            base_url: GEMINI_API_URL.to_string(),
+            model: DEFAULT_GEMINI_MODEL.to_string(),
+        }
+    }
+
+    pub fn with_config(api_key: String, timeout: Duration, base_url: Option<String>, model: Option<String>) -> Self {
+        Self {
+            api_key,
+            timeout,
+            base_url: base_url.unwrap_or_else(|| GEMINI_API_URL.to_string()),
+            model: model.unwrap_or_else(|| DEFAULT_GEMINI_MODEL.to_string()),
+        }
+    }
+
+    pub fn build_request(&self, prompt: &str) -> GeminiRequest {
+        GeminiRequest {
+            contents: vec![GeminiContent {
+                parts: vec![GeminiPart {
+                    text: prompt.to_string(),
+                }],
+            }],
+        }
+    }
+
+    pub fn build_url(&self) -> String {
+        let base = self.base_url.trim_end_matches('/');
+        format!("{}/v1beta/models/{}:generateContent", base, self.model)
+    }
+
+    fn parse_response(&self, json: &str) -> Result<AgentResponse, AgentError> {
+        let api_response: GeminiApiResponse = serde_json::from_str(json).map_err(|e| AgentError {
             message: format!("Failed to parse response: {}", e),
         })?;
 
         match api_response {
-            ApiResponse::Success(chat_response) => {
-                let content = chat_response
-                    .choices
+            GeminiApiResponse::Success(response) => {
+                let content = response
+                    .candidates
                     .first()
-                    .map(|c| c.message.content.clone())
+                    .and_then(|c| c.content.parts.first())
+                    .map(|p| p.text.clone())
                     .ok_or_else(|| AgentError {
-                        message: "No choices in response".to_string(),
+                        message: "No content in response".to_string(),
                     })?;
                 Ok(AgentResponse { content })
             }
-            ApiResponse::Error { error } => Err(AgentError {
+            GeminiApiResponse::Error { error } => Err(AgentError {
                 message: format!("API error: {}", error.message),
             }),
         }
+    }
+}
+
+impl LlmAgent for GeminiAgent {
+    fn send_request(&self, prompt: &str) -> Result<AgentResponse, AgentError> {
+        let request = self.build_request(prompt);
+        let url = self.build_url();
+
+        let agent = ureq::AgentBuilder::new()
+            .timeout(self.timeout)
+            .build();
+
+        let response = agent
+            .post(&url)
+            .set("x-goog-api-key", &self.api_key)
+            .set("Content-Type", "application/json")
+            .send_json(&request);
+
+        match response {
+            Ok(resp) => {
+                let body = resp.into_string().map_err(|e| AgentError {
+                    message: format!("Failed to read response body: {}", e),
+                })?;
+                self.parse_response(&body)
+            }
+            Err(ureq::Error::Status(status, resp)) => {
+                let body = resp.into_string().unwrap_or_default();
+                let error_msg = match status {
+                    401 => "Unauthorized: Invalid API key".to_string(),
+                    429 => "Rate limit exceeded".to_string(),
+                    s if s >= 500 => format!("Server error: {}", s),
+                    _ => {
+                        if let Ok(parsed) = self.parse_response(&body) {
+                            return Ok(parsed);
+                        }
+                        format!("HTTP error {}: {}", status, body)
+                    }
+                };
+                Err(AgentError { message: error_msg })
+            }
+            Err(e) => Err(AgentError {
+                message: format!("Request failed: {}", e),
+            }),
+        }
+    }
+}
+
+pub fn create_agent(
+    vendor: &str,
+    api_key: String,
+    timeout: Duration,
+    base_url: Option<String>,
+    model: Option<String>,
+) -> Result<Box<dyn LlmAgent>, AgentError> {
+    match vendor {
+        "openai" => Ok(Box::new(OpenAiAgent::with_config(api_key, timeout, base_url, model))),
+        "gemini" => Ok(Box::new(GeminiAgent::with_config(api_key, timeout, base_url, model))),
+        _ => Err(AgentError {
+            message: format!("Unknown vendor '{}'. Valid vendors: openai, gemini", vendor),
+        }),
     }
 }
 
@@ -146,7 +281,7 @@ pub struct Choice {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum ApiResponse {
+enum OpenAiApiResponse {
     Success(ChatResponse),
     Error { error: ApiErrorDetail },
 }
@@ -156,48 +291,102 @@ struct ApiErrorDetail {
     message: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct GeminiRequest {
+    pub contents: Vec<GeminiContent>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GeminiContent {
+    pub parts: Vec<GeminiPart>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GeminiPart {
+    pub text: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeminiResponse {
+    pub candidates: Vec<GeminiCandidate>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeminiCandidate {
+    pub content: GeminiContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum GeminiApiResponse {
+    Success(GeminiResponse),
+    Error { error: ApiErrorDetail },
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_create_agent() {
+    fn test_openai_implements_trait() {
+        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
+        let _: &dyn LlmAgent = &agent;
+    }
+
+    #[test]
+    fn test_create_openai_agent() {
         let api_key = "test_api_key".to_string();
         let timeout = Duration::from_secs(30);
 
-        let agent = Agent::new(api_key.clone(), timeout);
+        let agent = OpenAiAgent::new(api_key.clone(), timeout);
 
         assert_eq!(agent.api_key, api_key);
         assert_eq!(agent.timeout, timeout);
         assert_eq!(agent.base_url, OPENAI_API_URL);
+        assert_eq!(agent.model, DEFAULT_OPENAI_MODEL);
     }
 
     #[test]
-    fn test_create_agent_with_custom_base_url() {
-        let agent = Agent::with_base_url(
+    fn test_openai_uses_configured_model() {
+        let agent = OpenAiAgent::with_config(
             "key".to_string(),
             Duration::from_secs(10),
-            "http://localhost:8080".to_string(),
+            None,
+            Some("gpt-4".to_string()),
         );
 
-        assert_eq!(agent.base_url, "http://localhost:8080");
+        let request = agent.build_chat_request("Hello");
+
+        assert_eq!(request.model, "gpt-4");
+    }
+
+    #[test]
+    fn test_openai_uses_configured_base_url() {
+        let agent = OpenAiAgent::with_config(
+            "key".to_string(),
+            Duration::from_secs(10),
+            Some("https://custom.openai.com".to_string()),
+            None,
+        );
+
+        assert_eq!(agent.base_url, "https://custom.openai.com");
     }
 
     #[test]
     fn test_build_chat_request() {
-        let agent = Agent::new("key".to_string(), Duration::from_secs(10));
+        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
 
         let request = agent.build_chat_request("Hello");
 
-        assert_eq!(request.model, DEFAULT_MODEL);
+        assert_eq!(request.model, DEFAULT_OPENAI_MODEL);
         assert_eq!(request.messages.len(), 1);
         assert_eq!(request.messages[0].role, "user");
         assert_eq!(request.messages[0].content, "Hello");
     }
 
     #[test]
-    fn test_parse_success_response() {
-        let agent = Agent::new("key".to_string(), Duration::from_secs(10));
+    fn test_parse_openai_success_response() {
+        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
         let json = r#"{
             "choices": [
                 {
@@ -216,8 +405,8 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_error_response() {
-        let agent = Agent::new("key".to_string(), Duration::from_secs(10));
+    fn test_parse_openai_error_response() {
+        let agent = OpenAiAgent::new("key".to_string(), Duration::from_secs(10));
         let json = r#"{
             "error": {
                 "message": "Invalid API key",
@@ -232,6 +421,145 @@ mod tests {
         let error = result.unwrap_err();
         assert!(error.message.contains("Invalid API key"));
     }
+
+    #[test]
+    fn test_gemini_implements_trait() {
+        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let _: &dyn LlmAgent = &agent;
+    }
+
+    #[test]
+    fn test_create_gemini_agent() {
+        let api_key = "test_api_key".to_string();
+        let timeout = Duration::from_secs(30);
+
+        let agent = GeminiAgent::new(api_key.clone(), timeout);
+
+        assert_eq!(agent.api_key, api_key);
+        assert_eq!(agent.timeout, timeout);
+        assert_eq!(agent.base_url, GEMINI_API_URL);
+        assert_eq!(agent.model, DEFAULT_GEMINI_MODEL);
+    }
+
+    #[test]
+    fn test_gemini_request_format() {
+        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+
+        let request = agent.build_request("Hello");
+
+        assert_eq!(request.contents.len(), 1);
+        assert_eq!(request.contents[0].parts.len(), 1);
+        assert_eq!(request.contents[0].parts[0].text, "Hello");
+    }
+
+    #[test]
+    fn test_gemini_url_format() {
+        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+
+        let url = agent.build_url();
+
+        assert_eq!(
+            url,
+            format!("{}/v1beta/models/{}:generateContent", GEMINI_API_URL, DEFAULT_GEMINI_MODEL)
+        );
+    }
+
+    #[test]
+    fn test_gemini_url_with_custom_model() {
+        let agent = GeminiAgent::with_config(
+            "key".to_string(),
+            Duration::from_secs(10),
+            None,
+            Some("gemini-pro".to_string()),
+        );
+
+        let url = agent.build_url();
+
+        assert!(url.contains("gemini-pro:generateContent"));
+    }
+
+    #[test]
+    fn test_gemini_response_parsing() {
+        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let json = r#"{
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"text": "Hello from Gemini!"}
+                        ]
+                    }
+                }
+            ]
+        }"#;
+
+        let result = agent.parse_response(json);
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().content, "Hello from Gemini!");
+    }
+
+    #[test]
+    fn test_gemini_error_response() {
+        let agent = GeminiAgent::new("key".to_string(), Duration::from_secs(10));
+        let json = r#"{
+            "error": {
+                "message": "API key not valid",
+                "status": "INVALID_ARGUMENT"
+            }
+        }"#;
+
+        let result = agent.parse_response(json);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("API key not valid"));
+    }
+
+    #[test]
+    fn test_select_vendor_openai() {
+        let result = create_agent(
+            "openai",
+            "key".to_string(),
+            Duration::from_secs(10),
+            None,
+            None,
+        );
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_select_vendor_gemini() {
+        let result = create_agent(
+            "gemini",
+            "key".to_string(),
+            Duration::from_secs(10),
+            None,
+            None,
+        );
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_vendor_error() {
+        let result = create_agent(
+            "unknown",
+            "key".to_string(),
+            Duration::from_secs(10),
+            None,
+            None,
+        );
+
+        match result {
+            Ok(_) => panic!("Expected error for unknown vendor"),
+            Err(error) => {
+                assert!(error.message.contains("Unknown vendor"));
+                assert!(error.message.contains("openai"));
+                assert!(error.message.contains("gemini"));
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -240,7 +568,7 @@ mod pact_tests {
     use pact_consumer::prelude::*;
 
     #[test]
-    fn pact_successful_completion() {
+    fn pact_openai_successful_completion() {
         let mock_server = PactBuilder::new_v4("agent-run", "openai-api")
             .interaction("successful chat completion", "", |mut i| {
                 i.request
@@ -270,10 +598,11 @@ mod pact_tests {
             })
             .start_mock_server(None, None);
 
-        let agent = Agent::with_base_url(
+        let agent = OpenAiAgent::with_config(
             "test_api_key".to_string(),
             Duration::from_secs(10),
-            mock_server.url().to_string(),
+            Some(mock_server.url().to_string()),
+            None,
         );
 
         let result = agent.send_request("Hello");
@@ -283,7 +612,7 @@ mod pact_tests {
     }
 
     #[test]
-    fn pact_invalid_api_key() {
+    fn pact_openai_invalid_api_key() {
         let mock_server = PactBuilder::new_v4("agent-run", "openai-api")
             .interaction("invalid API key", "", |mut i| {
                 i.request
@@ -304,10 +633,11 @@ mod pact_tests {
             })
             .start_mock_server(None, None);
 
-        let agent = Agent::with_base_url(
+        let agent = OpenAiAgent::with_config(
             "invalid_key".to_string(),
             Duration::from_secs(10),
-            mock_server.url().to_string(),
+            Some(mock_server.url().to_string()),
+            None,
         );
 
         let result = agent.send_request("Hello");
@@ -317,7 +647,7 @@ mod pact_tests {
     }
 
     #[test]
-    fn pact_rate_limit() {
+    fn pact_openai_rate_limit() {
         let mock_server = PactBuilder::new_v4("agent-run", "openai-api")
             .interaction("rate limit exceeded", "", |mut i| {
                 i.request
@@ -336,10 +666,11 @@ mod pact_tests {
             })
             .start_mock_server(None, None);
 
-        let agent = Agent::with_base_url(
+        let agent = OpenAiAgent::with_config(
             "test_key".to_string(),
             Duration::from_secs(10),
-            mock_server.url().to_string(),
+            Some(mock_server.url().to_string()),
+            None,
         );
 
         let result = agent.send_request("Hello");
@@ -349,7 +680,7 @@ mod pact_tests {
     }
 
     #[test]
-    fn pact_server_error() {
+    fn pact_openai_server_error() {
         let mock_server = PactBuilder::new_v4("agent-run", "openai-api")
             .interaction("server error", "", |mut i| {
                 i.request
@@ -368,10 +699,156 @@ mod pact_tests {
             })
             .start_mock_server(None, None);
 
-        let agent = Agent::with_base_url(
+        let agent = OpenAiAgent::with_config(
             "test_key".to_string(),
             Duration::from_secs(10),
-            mock_server.url().to_string(),
+            Some(mock_server.url().to_string()),
+            None,
+        );
+
+        let result = agent.send_request("Hello");
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("Server error"));
+    }
+
+    #[test]
+    fn pact_gemini_successful_completion() {
+        let mock_server = PactBuilder::new_v4("agent-run", "gemini-api")
+            .interaction("successful gemini completion", "", |mut i| {
+                i.request
+                    .post()
+                    .path(format!("/v1beta/models/{}:generateContent", DEFAULT_GEMINI_MODEL))
+                    .header("x-goog-api-key", "test_gemini_key")
+                    .header("Content-Type", "application/json")
+                    .json_body(json_pattern!({
+                        "contents": each_like!({
+                            "parts": each_like!({
+                                "text": like!("Hello")
+                            })
+                        })
+                    }));
+                i.response
+                    .ok()
+                    .header("Content-Type", "application/json")
+                    .json_body(json_pattern!({
+                        "candidates": [{
+                            "content": {
+                                "parts": [{
+                                    "text": "Hello from Gemini!"
+                                }]
+                            }
+                        }]
+                    }));
+                i
+            })
+            .start_mock_server(None, None);
+
+        let agent = GeminiAgent::with_config(
+            "test_gemini_key".to_string(),
+            Duration::from_secs(10),
+            Some(mock_server.url().to_string()),
+            None,
+        );
+
+        let result = agent.send_request("Hello");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().content, "Hello from Gemini!");
+    }
+
+    #[test]
+    fn pact_gemini_invalid_api_key() {
+        let mock_server = PactBuilder::new_v4("agent-run", "gemini-api")
+            .interaction("gemini invalid API key", "", |mut i| {
+                i.request
+                    .post()
+                    .path(format!("/v1beta/models/{}:generateContent", DEFAULT_GEMINI_MODEL))
+                    .header("x-goog-api-key", "invalid_key");
+                i.response
+                    .status(401)
+                    .header("Content-Type", "application/json")
+                    .json_body(json_pattern!({
+                        "error": {
+                            "message": "API key not valid. Please pass a valid API key.",
+                            "status": "INVALID_ARGUMENT"
+                        }
+                    }));
+                i
+            })
+            .start_mock_server(None, None);
+
+        let agent = GeminiAgent::with_config(
+            "invalid_key".to_string(),
+            Duration::from_secs(10),
+            Some(mock_server.url().to_string()),
+            None,
+        );
+
+        let result = agent.send_request("Hello");
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("Unauthorized"));
+    }
+
+    #[test]
+    fn pact_gemini_rate_limit() {
+        let mock_server = PactBuilder::new_v4("agent-run", "gemini-api")
+            .interaction("gemini rate limit exceeded", "", |mut i| {
+                i.request
+                    .post()
+                    .path(format!("/v1beta/models/{}:generateContent", DEFAULT_GEMINI_MODEL));
+                i.response
+                    .status(429)
+                    .header("Content-Type", "application/json")
+                    .json_body(json_pattern!({
+                        "error": {
+                            "message": "Resource has been exhausted",
+                            "status": "RESOURCE_EXHAUSTED"
+                        }
+                    }));
+                i
+            })
+            .start_mock_server(None, None);
+
+        let agent = GeminiAgent::with_config(
+            "test_key".to_string(),
+            Duration::from_secs(10),
+            Some(mock_server.url().to_string()),
+            None,
+        );
+
+        let result = agent.send_request("Hello");
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("Rate limit"));
+    }
+
+    #[test]
+    fn pact_gemini_server_error() {
+        let mock_server = PactBuilder::new_v4("agent-run", "gemini-api")
+            .interaction("gemini server error", "", |mut i| {
+                i.request
+                    .post()
+                    .path(format!("/v1beta/models/{}:generateContent", DEFAULT_GEMINI_MODEL));
+                i.response
+                    .status(500)
+                    .header("Content-Type", "application/json")
+                    .json_body(json_pattern!({
+                        "error": {
+                            "message": "Internal error encountered",
+                            "status": "INTERNAL"
+                        }
+                    }));
+                i
+            })
+            .start_mock_server(None, None);
+
+        let agent = GeminiAgent::with_config(
+            "test_key".to_string(),
+            Duration::from_secs(10),
+            Some(mock_server.url().to_string()),
+            None,
         );
 
         let result = agent.send_request("Hello");

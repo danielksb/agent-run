@@ -169,21 +169,21 @@ struct Choice {
 - [x] **Verify test passes**
 - [x] **Implement:** `Agent::build_chat_request(prompt)` method
 
-### 3.4 TDD: Response Parsing
+### 3.4 TDD: Response Parsing ✓
 
-#### Test: Parse successful response
-- [ ] **Write test:** `test_parse_success_response`
+#### Test: Parse successful response ✓
+- [x] **Write test:** `test_parse_success_response`
   - Given: Valid JSON response with `choices[0].message.content`
   - Expected: `AgentResponse.content` extracted correctly
-- [ ] **Verify test fails**
-- [ ] **Implement:** JSON deserialization into `ChatResponse`
+- [x] **Verify test passes**
+- [x] **Implement:** `Agent::parse_response(json)` with `ApiResponse` enum
 
-#### Test: Parse error response
-- [ ] **Write test:** `test_parse_error_response`
+#### Test: Parse error response ✓
+- [x] **Write test:** `test_parse_error_response`
   - Given: JSON with error object
-  - Expected: Appropriate error returned
-- [ ] **Verify test fails**
-- [ ] **Implement:** Handle API error responses
+  - Expected: `AgentError` with message containing API error
+- [x] **Verify test passes**
+- [x] **Implement:** Handle API error responses via `#[serde(untagged)]` enum
 
 ### 3.5 Pact Tests: LLM API Interaction
 

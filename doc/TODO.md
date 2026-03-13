@@ -185,38 +185,38 @@ struct Choice {
 - [x] **Verify test passes**
 - [x] **Implement:** Handle API error responses via `#[serde(untagged)]` enum
 
-### 3.5 Pact Tests: LLM API Interaction
+### 3.5 Pact Tests: LLM API Interaction ✓
 
-#### Pact: Successful chat completion
-- [ ] **Write pact test:** `pact_successful_completion`
+#### Pact: Successful chat completion ✓
+- [x] **Write pact test:** `pact_successful_completion`
   - Define expected request: POST to `/v1/chat/completions`
   - Define expected response: 200 with choices array
   - Mock OpenAI endpoint
-- [ ] **Verify pact test works with mock**
-- [ ] **Implement:** HTTP request using `ureq`
-  - Build POST request to `https://api.openai.com/v1/chat/completions`
+- [x] **Verify pact test works with mock**
+- [x] **Implement:** `Agent::send_request()` using `ureq`
+  - Build POST request to `{base_url}/v1/chat/completions`
   - Set `Authorization: Bearer <API_KEY>` header
   - Set `Content-Type: application/json` header
   - Use `.send_json()` for request body
-  - Configure timeout via `ureq::agent()`
+  - Configure timeout via `ureq::AgentBuilder`
 
-#### Pact: Invalid API key (401)
-- [ ] **Write pact test:** `pact_invalid_api_key`
+#### Pact: Invalid API key (401) ✓
+- [x] **Write pact test:** `pact_invalid_api_key`
   - Expected response: 401 Unauthorized
-- [ ] **Verify test fails**
-- [ ] **Implement:** Handle 401 response with appropriate error
+- [x] **Verify test passes**
+- [x] **Implement:** Handle 401 response with "Unauthorized: Invalid API key"
 
-#### Pact: Rate limit exceeded (429)
-- [ ] **Write pact test:** `pact_rate_limit`
+#### Pact: Rate limit exceeded (429) ✓
+- [x] **Write pact test:** `pact_rate_limit`
   - Expected response: 429 Too Many Requests
-- [ ] **Verify test fails**
-- [ ] **Implement:** Handle 429 response with appropriate error
+- [x] **Verify test passes**
+- [x] **Implement:** Handle 429 response with "Rate limit exceeded"
 
-#### Pact: Server error (500)
-- [ ] **Write pact test:** `pact_server_error`
+#### Pact: Server error (500) ✓
+- [x] **Write pact test:** `pact_server_error`
   - Expected response: 500 Internal Server Error
-- [ ] **Verify test fails**
-- [ ] **Implement:** Handle 5xx responses with appropriate error
+- [x] **Verify test passes**
+- [x] **Implement:** Handle 5xx responses with "Server error: {status}"
 
 ---
 

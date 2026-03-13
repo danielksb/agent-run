@@ -187,6 +187,11 @@ struct Choice {
 
 ### 3.5 Pact Tests: LLM API Interaction ✓
 
+**Pact file output:** Generated pact files are stored in `pacts/` at the project root.
+- Configured via `PACT_OUTPUT_DIR` environment variable set in tests
+- Default location (without configuration) would be `target/pacts/`
+- Generated file: `pacts/agent-run-openai-api.json`
+
 #### Pact: Successful chat completion ✓
 - [x] **Write pact test:** `pact_successful_completion`
   - Define expected request: POST to `/v1/chat/completions`
